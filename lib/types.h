@@ -22,7 +22,7 @@ static vector_type eval(functional_vector f, vector_type x, double t) {
 
 namespace vector {
 	static double dot(vector_type v1, vector_type v2) {
-		auto v = v1 * v2;
+		vector_type v = v1 * v2;
 		double dp = 0.0;
 		for (auto e : v) dp += e;
 		return dp;
@@ -50,7 +50,7 @@ namespace matrix {
 			cols = c;
 		}
 
-		Matrix(vector_type v) {
+		explicit Matrix(vector_type v) {
 			m = matrix_type({0.0}, v.size());
 			for (unsigned int i = 0; i < v.size(); i++) m[i] = v[i];
 			rows = v.size();
