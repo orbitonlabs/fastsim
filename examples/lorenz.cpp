@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
             return 0;
         };
 
-        ode_be(functions, initial_values, 0, 100, 1e-5, relay, 1e3);
+        ode_be(functions, initial_values, 0, 100, 1e-3, relay, 5);
         return 0;
     });
 }
