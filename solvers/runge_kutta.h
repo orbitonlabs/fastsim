@@ -11,51 +11,34 @@ using std::valarray;
 using std::ostream;
 using util::lang::indices;
 
-double _rk_odesolver_tolerance = 1e-2;
-double _rk_odesolver_default_step = 1e-6;
+static double _rk_odesolver_tolerance = 1e-2;
+static double _rk_odesolver_default_step = 1e-6;
 
-auto ode_rk4(const valarray<vector_function_type>& differentials,
+static auto ode_rk4(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions,
-    double domain_start, double domain_end, double stepping) {
+    double domain_start, double domain_end, double stepping,
+    const custom_parametric_function& pf, int freq) {
     vector_type state = initial_conditions;
     double mul = stepping / 6.0;
+    int count = 0;
     auto inddiff = indices(differentials);
     for (double marker = domain_start; marker <= domain_end; marker += stepping) {
         vector_type diff1(differentials.size());
         vector_type diff2(differentials.size());
         vector_type diff3(differentials.size());
         vector_type diff4(differentials.size());
-
         for (auto i : inddiff) diff1[i] = differentials[i](state, marker);
         for (auto i : inddiff) diff2[i] = differentials[i](state + (stepping / 2) * diff1, marker + (stepping / 2));
         for (auto i : inddiff) diff3[i] = differentials[i](state + (stepping / 2) * diff2, marker + (stepping / 2));
         for (auto i : inddiff) diff4[i] = differentials[i](state + stepping * diff3, marker + stepping);
-
         state += mul * (diff1 + 2 * diff2 + 2 * diff3 + diff4);
-    }
-    return state;
-}
-
-auto ode_rk4(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions,
-    double domain_start, double domain_end, double stepping, std::ofstream& output) {
-    vector_type state = initial_conditions;
-    double mul = stepping / 6.0;
-    auto inddiff = indices(differentials);
-    for (double marker = domain_start; marker <= domain_end; marker += stepping) {
-        vector_type diff1(differentials.size());
-        vector_type diff2(differentials.size());
-        vector_type diff3(differentials.size());
-        vector_type diff4(differentials.size());
-
-        for (auto i : inddiff) diff1[i] = differentials[i](state, marker);
-        for (auto i : inddiff) diff2[i] = differentials[i](state + (stepping / 2) * diff1, marker + (stepping / 2));
-        for (auto i : inddiff) diff3[i] = differentials[i](state + (stepping / 2) * diff2, marker + (stepping / 2));
-        for (auto i : inddiff) diff4[i] = differentials[i](state + stepping * diff3, marker + stepping);
-
-        state += mul * (diff1 + 2 * diff2 + 2 * diff3 + diff4);
-        for (double x : state) output << x << ",";
-        output << marker << "\n";
+        if(count == freq) {
+            auto s = pf(state, marker);
+            if (s != 0) break;
+            count = 0;
+        } else {
+            count++;
+        }
     }
     return state;
 }
@@ -66,11 +49,13 @@ auto gensolveAB(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions,
     double domain_start, double domain_end, double epsilon,
     const vector_type& a, const valarray<vector_type>& b, const vector_type& c, const vector_type& ch,
-    int A, int B, double h_start) {
+    int A, int B, double h_start,
+    const custom_parametric_function& pf, int freq) {
     vector_type state = initial_conditions;
     auto inddiff = indices(differentials);
     auto ct = c - ch;
     double h = h_start;
+    int count = 0;
     for (double marker = domain_start; marker <= domain_end;) {
         valarray<vector_type> k(B);
         for (int i = 0; i < B; i++) {
@@ -92,51 +77,17 @@ auto gensolveAB(const valarray<vector_function_type>& differentials,
         double h_next = 0.9 * h * pow(epsilon / te, 1.0 / A);
         if (te > epsilon) {
             h = h_next;
+            if(count == freq) {
+                auto s = pf(state, marker);
+                if (s != 0) break;
+                count = 0;
+            } else {
+                count++;
+            }
         }
         else {
             state = new_state;
             h = h_next;
-            marker += h;
-        }
-    }
-}
-
-auto gensolveAB(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions,
-    double domain_start, double domain_end, double epsilon,
-    const vector_type& a, const valarray<vector_type>& b, const vector_type& c, const vector_type& ch,
-    int A, int B, double h_start, std::ofstream& output) {
-    vector_type state = initial_conditions;
-    auto inddiff = indices(differentials);
-    auto ct = c - ch;
-    double h = h_start;
-    for (double marker = domain_start; marker <= domain_end;) {
-        valarray<vector_type> k(B);
-        for (int i = 0; i < B; i++) {
-            vector_type kp = state;
-            for (int j = 0; j < i; j++) kp += b[i][j] * k[j];
-            vector_type kn(differentials.size());
-            for (auto index : inddiff) kn[index] = h * differentials[index](kp, marker + h * a[i]);
-            k[i] = kn;
-        }
-        vector_type new_state = state;
-        vector_type errors(state.size());
-        double te = 0;
-        for (int i = 0; i < B; i++) {
-            new_state += ch[i] * k[i];
-            errors += ct[i] * k[i];
-        }
-        for (auto index : inddiff) te += errors[index] * errors[index];
-        te = sqrt(te);
-        double h_next = 0.9 * h * pow(epsilon / te, 1.0 / A);
-        if (te > epsilon) {
-            h = h_next;
-        }
-        else {
-            state = new_state;
-            h = h_next;
-            for (auto s : state) output << s << ",";
-            output << marker << "\n";
             marker += h;
         }
     }
@@ -158,14 +109,9 @@ const vector_type rk45orig_c = { 25.0/216, 0, 1408.0/2565, 2197.0 / 4104, -1.0 /
 
 auto ode_rk45orig(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions,
-    double domain_start, double domain_end) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45orig_a, rk45orig_b, rk45orig_c, rk45orig_ch, 5, 6, 1e-4);
-}
-
-auto ode_rk45orig(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions,
-    double domain_start, double domain_end, std::ofstream& output) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45orig_a, rk45orig_b, rk45orig_c, rk45orig_ch, 5, 6, 1e-4, output);
+    double domain_start, double domain_end,
+    const custom_parametric_function& pf, int freq) {
+    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45orig_a, rk45orig_b, rk45orig_c, rk45orig_ch, 5, 6, 1e-4, pf, freq);
 }
 
 /* Dormand-Prince RK45 adaptive step integrator */
@@ -185,14 +131,9 @@ const vector_type rk45dp_ch = { 5179.0 / 57600, 0, 7571.0 / 16695, 393.0 / 640, 
 
 auto ode_rk45(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions,
-    double domain_start, double domain_end) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45dp_a, rk45dp_b, rk45dp_c, rk45dp_ch, 6, 7, 1e-4);
-}
-
-auto ode_rk45(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions,
-    double domain_start, double domain_end, std::ofstream& output) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45dp_a, rk45dp_b, rk45dp_c, rk45dp_ch, 6, 7, 1e-4, output);
+    double domain_start, double domain_end,
+    const custom_parametric_function& pf, int freq) {
+    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45dp_a, rk45dp_b, rk45dp_c, rk45dp_ch, 6, 7, 1e-4, pf, freq);
 }
 
 /* Cash-Karp RK45 adaptive step integrator */
@@ -211,14 +152,9 @@ const vector_type rk45cp_ch = { 2825.0 / 27648, 0, 18575.0 / 48384, 13525.0 /552
 
 auto ode_rk45cp(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions,
-    double domain_start, double domain_end) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45cp_a, rk45cp_b, rk45cp_c, rk45cp_ch, 5, 6, 1e-4);
-}
-
-auto ode_rk45cp(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions,
-    double domain_start, double domain_end, std::ofstream& output) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45cp_a, rk45cp_b, rk45cp_c, rk45cp_ch, 5, 6, 1e-4, output);
+    double domain_start, double domain_end,
+    const custom_parametric_function& pf, int freq) {
+    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk45cp_a, rk45cp_b, rk45cp_c, rk45cp_ch, 5, 6, 1e-4, pf, freq);
 }
 
 /* Euler-Heun adaptive integrator */
@@ -233,14 +169,9 @@ const vector_type rk12eh_ch = { 1, 0 };
 
 auto ode_rk12eh(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions,
-    double domain_start, double domain_end) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk12eh_a, rk12eh_b, rk12eh_c, rk12eh_ch, 1, 2, 1e-4);
-}
-
-auto ode_rk12eh(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions,
-    double domain_start, double domain_end, std::ofstream& output) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk12eh_a, rk12eh_b, rk12eh_c, rk12eh_ch, 1, 2, 1e-4, output);
+    double domain_start, double domain_end,
+    const custom_parametric_function& pf, int freq) {
+    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk12eh_a, rk12eh_b, rk12eh_c, rk12eh_ch, 1, 2, 1e-4, pf, freq);
 }
 
 /* Bogacki-Shampine adaptive integrator */
@@ -257,22 +188,19 @@ const vector_type rk23bs_c = { 7.0/24, 0.25, 1.0/3, 1.0/8 };
 
 auto ode_rk23bs(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions,
-    double domain_start, double domain_end) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk23bs_a, rk23bs_b, rk23bs_c, rk23bs_ch, 2, 3, 1e-4);
-}
-
-auto ode_rk23bs(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions,
-    double domain_start, double domain_end, std::ofstream& output) {
-    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk23bs_a, rk23bs_b, rk23bs_c, rk23bs_ch, 2, 3, 1e-4, output);
+    double domain_start, double domain_end,
+    const custom_parametric_function& pf, int freq) {
+    gensolveAB(differentials, initial_conditions, domain_start, domain_end, _rk_odesolver_tolerance, rk23bs_a, rk23bs_b, rk23bs_c, rk23bs_ch, 2, 3, 1e-4, pf, freq);
 }
 
 /* Crank Nicholson */
 
 auto ode_cnrk2(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions, const double stepping,
-    double domain_start, double domain_end, std::ofstream& output) {
+    double domain_start, double domain_end,
+    const custom_parametric_function& pf, int freq) {
     vector_type state = initial_conditions;
+    int count = 0;
     for (double marker = domain_start; marker <= domain_end; marker += stepping) {
         auto k1 = stepping * eval(differentials, state, marker);
         functional_vector ies2(zero, differentials.size());
@@ -284,8 +212,13 @@ auto ode_cnrk2(const valarray<vector_function_type>& differentials,
         }
         auto k2 = newton_raphson(ies2, state, marker, 1e-6, 5);
         state += 0.5 * k1 + 0.5 * k2;
-        for (double x : state) output << x << ",";
-        output << marker << "\n";
+        if(count == freq) {
+            auto s = pf(state, marker);
+            if (s != 0) break;
+            count = 0;
+        } else {
+            count++;
+        }
     }
 }
 
@@ -293,8 +226,10 @@ auto ode_cnrk2(const valarray<vector_function_type>& differentials,
 
 auto ode_qzdirk2(const valarray<vector_function_type>& differentials,
     const vector_type& initial_conditions, const double stepping,
-    double domain_start, double domain_end, std::ofstream& output) {
+    double domain_start, double domain_end,
+    const custom_parametric_function& pf, int freq) {
     vector_type state = initial_conditions;
+    int count = 0;
     for (double marker = domain_start; marker <= domain_end; marker += stepping) {
         functional_vector ies1(zero, differentials.size());
         for (int i = 0; i < differentials.size(); i++) {
@@ -313,7 +248,12 @@ auto ode_qzdirk2(const valarray<vector_function_type>& differentials,
         }
         auto k2 = newton_raphson(ies2, state, marker, 1e-6, 5);
         state += 0.5 * k1 + 0.5 * k2;
-        for (double x : state) output << x << ",";
-        output << marker << "\n";
+        if(count == freq) {
+            auto s = pf(state, marker);
+            if (s != 0) break;
+            count = 0;
+        } else {
+            count++;
+        }
     }
 }
