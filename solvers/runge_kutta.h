@@ -6,6 +6,7 @@
 #include <fstream>
 #include "../lib/range.h"
 #include "../lib/types.h"
+#include "../solvers/newton_raphson.h"
 
 using std::valarray;
 using std::ostream;

@@ -1,5 +1,5 @@
 
-#include "solvers/euler.h"
+#include "../solvers/euler.h"
 
 double f1h(vector_type state, double m) {
     return state[1];
@@ -11,7 +11,7 @@ double f2h(vector_type state, double m) {
 
 namespace plt = cxxplot;
 
-int main(int argc, char* argv[])
+int main1(int argc, char* argv[])
 {
     return cxxplot::exec( argc, argv, [ & ]( ) {
         std::vector< plt::point2d > data;
@@ -55,22 +55,7 @@ int main(int argc, char* argv[])
         auto t2 = std::chrono::high_resolution_clock::now();
         auto dt1 = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
         std::cout << "w/Graphing (Freq: 5e5): " << dt1.count() << "ms" << std::endl;
-
-        std::ofstream outA("fe_test.csv");
-        outA << "x,y,t" << "\n";
-        auto t1d = std::chrono::high_resolution_clock::now();
-        ode_fe(functions, init, 0, 50, 1e-6, outA);
-        auto t2d = std::chrono::high_resolution_clock::now();
-        outA.close();
-        auto dt1d = std::chrono::duration_cast<std::chrono::milliseconds>(t2d - t1d);
-        std::cout << "w/CSV Dump (ALL DUMP): " << dt1d.count() << "ms" << std::endl;
-
-        auto t1r = std::chrono::high_resolution_clock::now();
-        ode_fe(functions, init, 0, 50, 1e-6);
-        auto t2r = std::chrono::high_resolution_clock::now();
-        auto dt1r = std::chrono::duration_cast<std::chrono::milliseconds>(t2r - t1r);
-        std::cout << "Reference (w/o constraints): " << dt1r.count() << "ms" << std::endl;
-
         return 0;
     });
+    return 0;
 }

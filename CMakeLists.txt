@@ -23,9 +23,14 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable( cxxplot )
 
-add_executable(fastsim fastsim2024.cpp experiment_1.cpp experiment_2.cpp
+add_executable(fastsim fastsim2024.cpp experiments/experiment_1.cpp experiments/experiment_2.cpp
                         lib/jacobian.h lib/range.h lib/types.h
                         solvers/euler.h solvers/newton_raphson.h solvers/runge_kutta.h
-        experiment_3.cpp)
-target_link_libraries(fastsim PRIVATE cxxplot::cxxplot)
+        experiments/experiment_3.cpp)
 
+add_executable(vanderpol examples/vanderpol.cpp)
+add_executable(lorenz examples/lorenz.cpp)
+
+target_link_libraries(fastsim PRIVATE cxxplot::cxxplot)
+target_link_libraries(vanderpol PRIVATE cxxplot::cxxplot)
+target_link_libraries(lorenz PRIVATE cxxplot::cxxplot)
