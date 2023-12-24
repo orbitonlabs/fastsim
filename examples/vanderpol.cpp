@@ -6,7 +6,7 @@
  */
 
 #include "../lib/types.h"
-#include "../solvers/euler.h"
+#include "../solvers/runge_kutta.h"
 
 static const double mu = 1.7;
 namespace plt = cxxplot;
@@ -41,7 +41,8 @@ int main(int argc, char* argv[]) {
             return 0;
         };
 
-        ode_fe(functions, initial_values, 0, 7.5, 1e-5, relay, 5e3);
+        _rk_odesolver_tolerance = 1e-2;
+        ode_rk45(functions, initial_values, 0, 7.5, relay, 1);
         return 0;
     });
 }

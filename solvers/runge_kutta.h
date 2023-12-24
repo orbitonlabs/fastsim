@@ -78,18 +78,18 @@ auto gensolveAB(const valarray<vector_function_type>& differentials,
         double h_next = 0.9 * h * pow(epsilon / te, 1.0 / A);
         if (te > epsilon) {
             h = h_next;
-            if(count == freq) {
-                auto s = pf(state, marker);
-                if (s != 0) break;
-                count = 0;
-            } else {
-                count++;
-            }
         }
         else {
             state = new_state;
             h = h_next;
             marker += h;
+        }
+        if(count == freq) {
+            auto s = pf(state, marker);
+            if (s != 0) break;
+            count = 0;
+        } else {
+            count++;
         }
     }
 }
