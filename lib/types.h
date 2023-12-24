@@ -1,5 +1,6 @@
 #pragma once
 
+#include <utility>
 #include <valarray>
 #include <functional>
 #include <iostream>
@@ -14,21 +15,21 @@ typedef valarray<vector_function_type> functional_vector;
 typedef valarray<double> vector_type;
 typedef valarray<valarray<double>> matrix_type;
 
-static vector_type eval(functional_vector f, vector_type x, double t) {
+static vector_type eval(const functional_vector& f, const vector_type& x, double t) {
 	vector_type v(0.0, f.size());
-	for (int i = 0; i < f.size(); i++) v[i] = f[i](x, t);
+	for (size_t i = 0; i != f.size(); i++) v[i] = f[i](x, t);
 	return v;
 }
 
 namespace vector {
-	static double dot(vector_type v1, vector_type v2) {
+	static double dot(const vector_type& v1, const vector_type& v2) {
 		vector_type v = v1 * v2;
 		double dp = 0.0;
 		for (auto e : v) dp += e;
 		return dp;
 	}
 
-	static void print(vector_type v) {
+	static void print(const vector_type& v) {
 		std::cout << "[";
 		for (auto e : v) std::cout << e << ", ";
 		std::cout << "]\n";
@@ -40,24 +41,24 @@ namespace matrix {
 	class Matrix {
 	private:
 		matrix_type m;
-		unsigned int rows;
-		unsigned int cols;
+		size_t rows;
+		size_t cols;
 
 	public:
-		Matrix(matrix_type matrix, const unsigned int r, const unsigned int c) {
-			m = matrix;
+		Matrix(matrix_type matrix, const size_t r, const size_t c) {
+			m = std::move(matrix);
 			rows = r;
 			cols = c;
 		}
 
 		explicit Matrix(vector_type v) {
 			m = matrix_type({0.0}, v.size());
-			for (unsigned int i = 0; i < v.size(); i++) m[i] = v[i];
+			for (size_t i = 0; i < v.size(); i++) m[i] = v[i];
 			rows = v.size();
 			cols = 1;
 		}
 
-		Matrix(const unsigned int r, const unsigned int c) {
+		Matrix(const size_t r, const size_t c) {
 			auto vec = vector_type(0.0, c);
 			m = matrix_type(vec, r);
 			rows = r;
@@ -65,17 +66,17 @@ namespace matrix {
 		}
 
 		Matrix operator + (const Matrix& matrix) {
-			return Matrix(m + matrix.m, rows, cols);
+			return {m + matrix.m, rows, cols};
 		}
 
 		Matrix operator - (const Matrix& matrix) {
-			return Matrix(m - matrix.m, rows, cols);
+			return {m - matrix.m, rows, cols};
 		}
 
 		Matrix transpose() {
 			Matrix t(cols, rows);
-			for (unsigned int ri = 0; ri < rows; ri++) {
-				for (unsigned int ci = 0; ci < cols; ci++) {
+			for (size_t ri = 0; ri < rows; ri++) {
+				for (size_t ci = 0; ci < cols; ci++) {
 					t.m[ci][ri] = m[ri][ci];
 				}
 			}
@@ -85,8 +86,8 @@ namespace matrix {
 		Matrix operator * (Matrix& matrix) {
 			Matrix r(rows, matrix.cols);
 			auto t = matrix.transpose();
-			for (unsigned int ri = 0; ri < rows; ri++) {
-				for (unsigned int ci = 0; ci < matrix.cols; ci++) {
+			for (size_t ri = 0; ri < rows; ri++) {
+				for (size_t ci = 0; ci < matrix.cols; ci++) {
 					r.m[ri][ci] = vector::dot(m[ri], t.m[ci]);
 				}
 			}
@@ -95,7 +96,7 @@ namespace matrix {
 
 		vector_type dot(const vector_type& v) {
 			vector_type r(v.size());
-			for (unsigned int i = 0; i < rows; i++) {
+			for (size_t i = 0; i < rows; i++) {
 				r[i] = vector::dot(m[i], v);
 			}
 			return r;
@@ -111,9 +112,9 @@ namespace matrix {
 		}
 
 		// http://dx.doi.org/10.4018/jtd.2010010102
-		static double inverse(const Matrix& a, Matrix& res, int size) {
+		static double inverse(const Matrix& a, Matrix& res, size_t size) {
 			double pivot, det = 1.0;
-			int i, j, p;
+			size_t i, j, p;
 			res.m = a.m;
 			for (p = 0; p < size; p++) {
 				pivot = res.m[p][p];
@@ -136,7 +137,7 @@ namespace matrix {
 		static double geninv(Matrix& a, Matrix& geninv) {
 			auto at = a.transpose();
 			auto sq = a * at;
-			int size = sq.rows;
+			const size_t size = sq.rows;
 			Matrix inv(size, size);
 			double res = inverse(sq, inv, size);
 			geninv = at * inv;

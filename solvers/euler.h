@@ -11,11 +11,11 @@ using std::valarray;
 using std::function;
 using util::lang::indices;
 
-double forwardEuler(double xn, double yn, double step, function<double(double, double)> func) {
+double forwardEuler(double xn, double yn, double step, const function<double(double, double)>& func) {
     return step * func(xn, yn);
 }
 
-double backwardEuler(double xn, double yn, double ynnext, double step, function<double(double, double)> func) {
+double backwardEuler(double xn, double yn, double ynnext, double step, const function<double(double, double)>& func) {
     return step * func(xn + step, ynnext) - ynnext + yn;
 }
 
