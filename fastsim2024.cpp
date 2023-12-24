@@ -15,7 +15,7 @@ double f2(vector_type state, double m) {
     return 1.766 * (1 - state[0] * state[0]) * state[1] - state[0];
 }
 
-int main() {
+int main_off() {
     std::cout << "OrbitonLabs FastSim 2024" << std::endl;
     std::cout << "Copyright(C) 2024, Simulation Department, Orbiton Labs" << std::endl;
     std::cout << "Licensed under MIT License" << std::endl;

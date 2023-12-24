@@ -25,6 +25,7 @@ FetchContent_MakeAvailable( cxxplot )
 
 add_executable(fastsim fastsim2024.cpp experiment_1.cpp experiment_2.cpp
                         lib/jacobian.h lib/range.h lib/types.h
-                        solvers/euler.h solvers/newton_raphson.h solvers/runge_kutta.h)
+                        solvers/euler.h solvers/newton_raphson.h solvers/runge_kutta.h
+        experiment_3.cpp)
 target_link_libraries(fastsim PRIVATE cxxplot::cxxplot)
 
