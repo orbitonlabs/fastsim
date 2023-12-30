@@ -226,8 +226,8 @@ auto ode_cnrk2(const valarray<vector_function_type>& differentials,
 /* Qin and Zhang's two-stage */
 
 auto ode_qzdirk2(const valarray<vector_function_type>& differentials,
-    const vector_type& initial_conditions, const double stepping,
-    double domain_start, double domain_end,
+    const vector_type& initial_conditions,
+    double domain_start, double domain_end, const double stepping,
     const custom_parametric_function& pf, int freq) {
     vector_type state = initial_conditions;
     int count = 0;

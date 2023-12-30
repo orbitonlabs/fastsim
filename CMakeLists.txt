@@ -30,7 +30,13 @@ add_executable(fastsim fastsim2024.cpp experiments/experiment_1.cpp experiments/
 
 add_executable(vanderpol examples/vanderpol.cpp)
 add_executable(lorenz examples/lorenz.cpp)
+add_executable(utsav_model rocket/models/utsav_model.cpp
+        rocket/models/urm_model.h
+)
+add_executable(liu_model rocket/models/liu_model.cpp)
 
 target_link_libraries(fastsim PRIVATE cxxplot::cxxplot)
 target_link_libraries(vanderpol PRIVATE cxxplot::cxxplot)
 target_link_libraries(lorenz PRIVATE cxxplot::cxxplot)
+target_link_libraries(utsav_model PRIVATE cxxplot::cxxplot)
+target_link_libraries(liu_model PRIVATE cxxplot::cxxplot)

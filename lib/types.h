@@ -14,7 +14,7 @@ using util::lang::indices;
 typedef std::function<double(valarray<double>, double)> vector_function_type;
 typedef valarray<vector_function_type> functional_vector;
 typedef valarray<double> vector_type;
-typedef std::function<int(vector_type, double)> custom_parametric_function;
+typedef std::function<int(vector_type&, double)> custom_parametric_function;
 typedef valarray<valarray<double>> matrix_type;
 
 static double zero(vector_type v, double t) {
