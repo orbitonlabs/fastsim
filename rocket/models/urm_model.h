@@ -151,7 +151,7 @@ namespace fastsim {
 
         static functional_vector generate_simfunc3(const OptimizedParameters& params) {
             auto dmdt = [&params] (vector_type state, double t) -> double {
-
+                return 0;
             };
             auto dPdt = [&params] (vector_type state, double t) -> double {
                 double P = state[CH_PRES];
