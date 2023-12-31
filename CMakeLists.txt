@@ -23,20 +23,23 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable( cxxplot )
 
-add_executable(fastsim fastsim2024.cpp experiments/experiment_1.cpp experiments/experiment_2.cpp
+add_executable(fastsim fastsim2024.cpp experiments/internal/experiment_1.cpp experiments/internal/experiment_2.cpp
                         lib/jacobian.h lib/range.h lib/types.h
                         solvers/euler.h solvers/newton_raphson.h solvers/runge_kutta.h
-        experiments/experiment_3.cpp)
+        experiments/internal/experiment_3.cpp)
 
 add_executable(vanderpol examples/vanderpol.cpp)
 add_executable(lorenz examples/lorenz.cpp)
-add_executable(utsav_model rocket/models/utsav_model.cpp
+add_executable(utsav_model examples/utsav_model.cpp
         rocket/models/urm_model.h
 )
 add_executable(liu_model rocket/models/liu_model.cpp)
+add_executable(exp_rlcp231 experiments/researchlab/exp_rlcp231.cpp)
 
 target_link_libraries(fastsim PRIVATE cxxplot::cxxplot)
 target_link_libraries(vanderpol PRIVATE cxxplot::cxxplot)
 target_link_libraries(lorenz PRIVATE cxxplot::cxxplot)
 target_link_libraries(utsav_model PRIVATE cxxplot::cxxplot)
 target_link_libraries(liu_model PRIVATE cxxplot::cxxplot)
+target_link_libraries(exp_rlcp231 PRIVATE cxxplot::cxxplot)
+add_executable(exp_rlcp232 experiments/researchlab/exp_elcp232.cpp)

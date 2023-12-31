@@ -1,5 +1,5 @@
-#include "../lib/types.h"
-#include "../solvers/newton_raphson.h"
+#include "../../lib/types.h"
+#include "../../solvers/newton_raphson.h"
 
 #include <iostream>
 

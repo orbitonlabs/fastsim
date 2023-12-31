@@ -67,6 +67,7 @@ namespace fastsim {
             double GR;
             double PATM;
             double INITM;
+            double P0;
         };
 
         static double area(double r) {
@@ -101,7 +102,8 @@ namespace fastsim {
                 0.5 * environment.air_density * rocket.coefficient_drag * Ap,
                 environment.gravity,
                 environment.pressure_atm,
-                rocket.dry_mass + rocket.density_propellant * Ap * rocket.height_propellant + environment.air_density * (rocket.pressure_initial / environment.pressure_atm) * Ap * (rocket.height_chamber - rocket.height_propellant)
+                rocket.dry_mass + rocket.density_propellant * Ap * rocket.height_propellant + environment.air_density * (rocket.pressure_initial / environment.pressure_atm) * Ap * (rocket.height_chamber - rocket.height_propellant),
+                rocket.pressure_initial
             };
         }
 
@@ -256,6 +258,60 @@ namespace fastsim {
                 ode_fe(fv4, sync_state, sync_time, 100, 1e-4, controller4, 5);
                 return 0;
             });
+        }
+
+        // EXPERIMENTAL PURPOSES ONLY
+        static int simulate(OptimizedParameters& opti, int stage_arrest,
+                            const experimental_coprocessor& postprocessor, const experimental_coprocessor& stage_processor) {
+            vector_type sync_state = { opti.INITM, opti.P0, 0, 0 };
+            double sync_time = 0;
+            auto controller1 = [&] (vector_type& s, double t) -> int {
+                if(s[CH_PRES] - opti.CCK1 < 1e-3) {
+                    sync_state = s;
+                    sync_time = t;
+                    return -1;
+                }
+                return postprocessor(s, t, 1);
+            };
+            auto controller2 = [&] (vector_type& s, double t) -> int {
+                if(s[CH_PRES] - opti.CCK2 < 1e-3) {
+                    sync_state = s;
+                    sync_time = t;
+                    return -1;
+                }
+                return postprocessor(s, t, 2);
+            };
+            auto controller3 = [&] (vector_type& s, double t) -> int {
+                if(s[CH_PRES] - opti.CCK3 < 1e-3) {
+                    sync_state = s;
+                    sync_time = t;
+                    return -1;
+                }
+                return postprocessor(s, t, 3);
+            };
+            auto controller4 = [&] (vector_type& s, double t) -> int {
+                if(s[CH_HGHT] < 1e-3) {
+                    sync_state = s;
+                    sync_time = t;
+                    return -1;
+                }
+                return postprocessor(s, t, 4);
+            };
+            auto fv1 = generate_simfunc1(opti);
+            auto fv2 = generate_simfunc2(opti);
+            auto fv3 = generate_simfunc3(opti);
+            auto fv4 = generate_simfunc4(opti);
+            ode_qzdirk2(fv1, sync_state, sync_time, 1, 1e-6, controller1, 1);
+            stage_processor(sync_state, sync_time, 1);
+            if(stage_arrest == 1) return 0;
+            ode_qzdirk2(fv2, sync_state, sync_time, 1, 1e-6, controller2, 1);
+            stage_processor(sync_state, sync_time, 2);
+            if(stage_arrest == 2) return 0;
+            ode_be(fv3, sync_state, sync_time, 1, 1e-6, controller3, 1);
+            stage_processor(sync_state, sync_time, 3);
+            if(stage_arrest == 3) return 0;
+            ode_fe(fv4, sync_state, sync_time, 100, 1e-4, controller4, 5);
+            stage_processor(sync_state, sync_time, 4);
         }
 
     }
