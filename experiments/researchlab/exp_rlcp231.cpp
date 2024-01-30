@@ -33,7 +33,7 @@ int main() {
                 out << (i / 10.0) << "," << pi << ",";
                 out << state[watch_channel] << "," << t << "\n";
             }
-            return 0;2
+            return 0;
         };
         for (pi = 0.2; pi <= 0.8; pi += 0.01) {
             std::cout << "Running PRES(" << i / 10.0 << "atm)" << " pi(" << pi << ") ... ";

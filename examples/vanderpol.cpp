@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         };
 
         _rk_odesolver_tolerance = 1e-2;
-        ode_rk45(functions, initial_values, 0, 7.5, relay, 1);
+        ode_rk45(functions, initial_values, 0, 750, relay, 1);
         return 0;
     });
 }
